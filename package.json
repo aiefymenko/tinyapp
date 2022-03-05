@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/aiefymenko/tinyapp/issues"
   },
-  "homepage": "https://github.com/aiefymenko/tinyapp#readme"
+  "homepage": "https://github.com/aiefymenko/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.3"
+  }
 }
