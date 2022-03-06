@@ -60,6 +60,14 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${randomURL}`);    
 });
 
+//Edit POST /urls/:id
+app.post("/urls/:id", (req, res) => {
+  const urlId = req.params.id;
+  const newURL = req.body.longURL;
+  urlDatabase[urlId] = newURL;
+  res.redirect("/urls");  
+});
+
 //Deleting the URL from /urls/:shortURL/ rout
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
