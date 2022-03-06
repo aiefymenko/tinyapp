@@ -60,6 +60,13 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${randomURL}`);    
 });
 
+//Deleting the URL from /urls/:shortURL/ rout
+app.post("/urls/:shortURL/delete", (req, res) => {
+  delete urlDatabase[req.params.shortURL];
+  res.redirect("/urls");
+});
+
+
 //Startin up a server at port #
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
