@@ -2,6 +2,9 @@ const express = require("express");
 const app = express();
 const PORT = 8080; //default port 8080
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
+
+app.use(cookieParser());
 
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -26,18 +29,19 @@ app.get("/", (req, res) => {
 
 //Creating /urls rout output
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render("urls_index", templateVars);
 });
 
 //Creating /urls/new rout to create a new URL's
 app.get("/urls/new", (req, res) => {
+  const templateVars = {urls: urlDatabase, username: req.cookies["username"]}
   res.render("urls_new");
 });
 
 // Rendering information about a single URL
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] };
   res.render("urls_show", templateVars);
 });
 
@@ -52,6 +56,20 @@ app.get("/u/:shortURL", (req, res) => {
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
+
+//Creating cookies to /login
+app.post("/login", (req, res) => {
+  const username = req.body.username;
+  res.cookie('username', username);
+  res.redirect("/urls");
+});
+
+// Creating /logout and clear the cookies
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect("/urls");
+});
+
 
 //Creating /urls rout using our randomURL and then redirecting to thatt random URL
 app.post("/urls", (req, res) => {
