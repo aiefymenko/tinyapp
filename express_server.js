@@ -35,8 +35,14 @@ app.get("/urls", (req, res) => {
 
 //Creating /urls/new rout to create a new URL's
 app.get("/urls/new", (req, res) => {
-  const templateVars = {urls: urlDatabase, username: req.cookies["username"]}
-  res.render("urls_new");
+  const templateVars = {urls: urlDatabase, username: req.cookies["username"] };
+  res.render("urls_new", templateVars);
+});
+
+// Register new user
+app.get("/register", (req, res) => {
+  const templateVars = {urls: urlDatabase, username: req.cookies["username"] };
+  res.render("urls_register", templateVars);
 });
 
 // Rendering information about a single URL
