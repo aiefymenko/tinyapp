@@ -20,9 +20,20 @@ const generateRandomString = () => {
 };
 
 //Create short: long URL object
+// const urlDatabase = {
+//   "b2xVn2": "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com",
+// };
+
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+        longURL: "https://www.tsn.ca",
+        userID: "aJ48lW"
+    },
+    i3BoGr: {
+        longURL: "https://www.google.ca",
+        userID: "aJ48lW"
+    }
 };
 
 //create userID object to store id, email, password
@@ -70,23 +81,33 @@ app.get("/", (req, res) => {
 
 //Requesting data from /urls and rendering urls_index page and passing templateVars as a callback
 app.get("/urls", (req, res) => {
-  //console.log("user id cookie", req.cookies["user_id"]);
   const templateVars = { urls: urlDatabase, user: getUserFromCookie(req) };
   res.render("urls_index", templateVars);
 });
 
 //Sending data to the server and redirecting to a new long URL
 app.post("/urls", (req, res) => {
-  const randomURL = generateRandomString();
-  urlDatabase[randomURL] = req.body.longURL;
-  res.redirect(`/urls/${randomURL}`);
+  if (getUserFromCookie(req)) { //if user isn't registered or logged in
+    const randomURL = generateRandomString();
+    urlDatabase[randomURL] = {
+      longURL: req.body.longURL,
+      userID: getUserFromCookie(req).id
+    };
+    res.redirect(`/urls/${randomURL}`);
+  } else {
+    return res.status(403).send("Access denied");
+  };
 });
 
 
 //Requesting data from url/new and rendering urls_new page and passing templateVars as callback
 app.get("/urls/new", (req, res) => {
   const templateVars = { urls: urlDatabase, user: getUserFromCookie(req) };
-  res.render("urls_new", templateVars);
+  if (getUserFromCookie(req)) { //if user isn't registered or logged in
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 // Register new user
@@ -106,7 +127,7 @@ app.post("/register", (req, res) => {
     users[id] = { id, email, password };
     res.cookie("user_id", users[id].id);
   } else {
-     return res.status(400).send("User already exists");;
+     return res.status(400).send("User already exists");
    }
   res.redirect("/urls");
 });
@@ -115,7 +136,7 @@ app.post("/register", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlDatabase[req.params.shortURL].longURL,
     user: getUserFromCookie(req),
   };
   res.render("urls_show", templateVars);
@@ -123,9 +144,15 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //Redirect shortURL using /u rout to longURL
 app.get("/u/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
-  res.redirect(longURL);
+  console.log(req.params.shortURL);
+  if (urlDatabase[req.params.shortURL]) {
+    const shortURL = req.params.shortURL;
+    const longURL = urlDatabase[shortURL].longURL;
+    res.redirect(longURL);
+  } else {
+    return res.status(400).send("Invalid link");
+  }
+
 });
 
 //Creating /hello rout with it's output
@@ -139,7 +166,7 @@ app.get("/login", (req, res) => {
   res.render("urls_login", templateVars);
 });
 
-//Creating cookies to /login
+//Checking if the user is registered and then passing id over to cookie
 app.post("/login", (req, res) => {
   const email = req.body.email.trim();
   const password = req.body.password.trim();
@@ -166,7 +193,7 @@ app.post("/logout", (req, res) => {
 app.post("/urls/:id", (req, res) => {
   const urlId = req.params.id;
   const newURL = req.body.longURL;
-  urlDatabase[urlId] = newURL;
+  urlDatabase[urlId].longURL = newURL;
   res.redirect("/urls");
 });
 
