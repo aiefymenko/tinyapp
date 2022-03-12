@@ -19,12 +19,7 @@ const generateRandomString = () => {
   return shortURL;
 };
 
-//Create short: long URL object
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com",
-// };
-
+//Database
 const urlDatabase = {
   b6UTxQ: {
         longURL: "https://www.tsn.ca",
@@ -72,7 +67,18 @@ const getUserByEmail = (email) => {
   return null;
 };
 
+//checking if user is logged in or registered via cookie
 const getUserFromCookie = (req) => users[req.cookies["user_id"]];
+
+//function to check if userID is equal to the id of the currently logged-in user
+const urlsForUser = (id) => {
+  let usersURL = {};
+  for (const key in urlDatabase) {
+    if (urlDatabase[key].userID === id) {
+      usersURL[key] = urlDatabase[key];
+    }
+  } return usersURL;
+}
 
 //Defining a rout handler for get request from / and responding with simple output
 app.get("/", (req, res) => {
@@ -81,13 +87,15 @@ app.get("/", (req, res) => {
 
 //Requesting data from /urls and rendering urls_index page and passing templateVars as a callback
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: getUserFromCookie(req) };
-  res.render("urls_index", templateVars);
+    const pullTheUserURL = urlsForUser (req.cookies["user_id"]);
+    const templateVars = { urls: pullTheUserURL, user: getUserFromCookie(req) };
+    console.log(templateVars);
+    res.render("urls_index", templateVars);
 });
 
 //Sending data to the server and redirecting to a new long URL
 app.post("/urls", (req, res) => {
-  if (getUserFromCookie(req)) { //if user isn't registered or logged in
+  if (getUserFromCookie(req)) { //if user registered or logged in
     const randomURL = generateRandomString();
     urlDatabase[randomURL] = {
       longURL: req.body.longURL,
@@ -191,16 +199,24 @@ app.post("/logout", (req, res) => {
 
 //Edit POST /urls/:id
 app.post("/urls/:id", (req, res) => {
-  const urlId = req.params.id;
-  const newURL = req.body.longURL;
-  urlDatabase[urlId].longURL = newURL;
-  res.redirect("/urls");
+  if (getUserFromCookie(req)) {
+    const urlId = req.params.id;
+    const newURL = req.body.longURL;
+    urlDatabase[urlId].longURL = newURL;
+    res.redirect("/urls");
+  } else {
+    return res.status(403).send("Access denied");
+  }    
 });
 
 //Deleting the URL from /urls/:shortURL/ rout
 app.post("/urls/:shortURL/delete", (req, res) => {
+  if (getUserFromCookie(req)) {
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
+  } else {
+    return res.status(403).send("Access denied");
+  }
 });
 
 //Startin up a server at port #
