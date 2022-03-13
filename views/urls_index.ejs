@@ -38,8 +38,10 @@
     </table>
   </main>
   <% } else { %>
-    <div class="navbar-nav">
-     You need to <a href="/register">Register </a> or <a href="/login">Login</a> to access it
+    <div class="alert alert-danger d-flex align-items-center" role="alert">
+      <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Danger:"><use xlink:href="#exclamation-triangle-fill"/></svg>
+      <div>
+        You need to <a href="/register">Register </a> or <a href="/login">Login</a> to access it
     </div>
  <% } %>  
   <!-- Bootstrap JS -->

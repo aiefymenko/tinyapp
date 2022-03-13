@@ -3,11 +3,10 @@ const app = express();
 const PORT = 8080; //default port 8080
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const bcrypt = require('bcryptjs'); //storing password securely
 
 app.use(cookieParser());//middleware for cookie parser
-
 app.use(bodyParser.urlencoded({ extended: true })); //middleware for parsing bodies from URL
-
 app.set("view engine", "ejs"); //Telling Express app to use EJS as its templating engine
 
 //Creating 6 character string
@@ -41,9 +40,10 @@ const users = {
   user2RandomID: {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk",
+    password: "$2a$10$Wm.mVryfyDJsZJjH2rvZu.VAYdRmI1g8zBpg/9C8ztZvuuSmwjzQe",
   },
 };
+
 
 //check an email in users object
 const isEmailUnique = (newEmail) => {
@@ -89,7 +89,6 @@ app.get("/", (req, res) => {
 app.get("/urls", (req, res) => {
     const pullTheUserURL = urlsForUser (req.cookies["user_id"]);
     const templateVars = { urls: pullTheUserURL, user: getUserFromCookie(req) };
-    console.log(templateVars);
     res.render("urls_index", templateVars);
 });
 
@@ -129,10 +128,11 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email.trim();
   const password = req.body.password.trim();
+  const hashedPassword = bcrypt.hashSync(password, 10); //security password
   if (email === "" || password === "") { //if email or password is empty
     return res.status(400).send("Email or Password can't be empty");
   } else if (isEmailUnique(email)) { //if our email is unique
-    users[id] = { id, email, password };
+    users[id] = { id, email, hashedPassword};
     res.cookie("user_id", users[id].id);
   } else {
      return res.status(400).send("User already exists");
@@ -180,7 +180,7 @@ app.post("/login", (req, res) => {
   const password = req.body.password.trim();
   const user = getUserByEmail(email);
   if (user) {
-    if (user.password === password) {
+    if (bcrypt.compareSync(password, user.hashedPassword)) {
       res.cookie("user_id", user.id);
       res.redirect("/urls");
     } else {
