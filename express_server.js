@@ -10,7 +10,8 @@ const {isEmailUnique} = require('./helpers');
 const {urlsForUser} = require('./helpers');
 const {getUserFromCookie} = require('./helpers');
 const {urlDatabase} = require('./helpers');
-const {users} = require('./helpers')
+const {users} = require('./helpers');
+const { request } = require("express");
 
 
 app.use(cookieSession({  //middleware for cookie session
@@ -29,6 +30,7 @@ app.get("/", (req, res) => {
 //Requesting data from /urls and rendering urls_index page and passing templateVars as a callback
 app.get("/urls", (req, res) => {
     const pullTheUserURL = urlsForUser(req.session.user_id);
+    console.log(pullTheUserURL);
     const templateVars = { urls: pullTheUserURL, user: getUserFromCookie(req) };
     res.render("urls_index", templateVars);
 });
@@ -73,7 +75,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Email or Password can't be empty");
   } else if (isEmailUnique(email)) { //if our email is unique
     users[id] = { id, email, hashedPassword};
-    req.session.user_id =  id;
+    req.session.user_id = id;
   } else {
      return res.status(400).send("User already exists");
    }
@@ -82,7 +84,8 @@ app.post("/register", (req, res) => {
 
 // Rendering information about a single URL
 app.get("/urls/:shortURL", (req, res) => {
-  if (!req.session.user_id) {
+  const currentUser = users[req.session.user_id];
+  if (!currentUser) {
     return res.status(400).send("You aren't Logged In");
   }
   const templateVars = {
@@ -90,9 +93,10 @@ app.get("/urls/:shortURL", (req, res) => {
     longURL: urlDatabase[req.params.shortURL].longURL,
     user: getUserFromCookie(req),
   };
-  if (urlDatabase[req.params.shortURL][req.session.user_id] !== urlDatabase[req.params.shortURL.userID]) {
+  console.log(urlDatabase);
+  if (currentUser.id !== urlDatabase[req.params.shortURL].userID) {
     res.status(400).send("Unauthorised Request");
-  } else {
+  } else  {
   res.render("urls_show", templateVars);
   }
 });
