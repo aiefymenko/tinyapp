@@ -5,6 +5,12 @@ const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session')
 const bcrypt = require('bcryptjs'); //storing password securely
 const { getUserByEmail } = require('./helpers'); //pulling out our function from helpers.js
+const {generateRandomString} = require('./helpers'); 
+const {isEmailUnique} = require('./helpers');
+const {urlsForUser} = require('./helpers');
+const {getUserFromCookie} = require('./helpers');
+const {urlDatabase} = require('./helpers');
+const {users} = require('./helpers')
 
 
 app.use(cookieSession({  //middleware for cookie session
@@ -14,66 +20,6 @@ app.use(cookieSession({  //middleware for cookie session
 app.use(bodyParser.urlencoded({ extended: true })); //middleware for parsing bodies from URL
 app.set("view engine", "ejs"); //Telling Express app to use EJS as its templating engine
 
-//Creating 6 character string
-const generateRandomString = () => {
-  const shortURL = Math.random()
-    .toString(36)
-    .replace(/[^a-z]+/g, "")
-    .slice(0, 6);
-  return shortURL;
-};
-
-//Database
-const urlDatabase = {
-  b6UTxQ: {
-        longURL: "https://www.tsn.ca",
-        userID: "aJ48lW"
-    },
-    i3BoGr: {
-        longURL: "https://www.google.ca",
-        userID: "aJ48lW"
-    }
-};
-
-//create userID object to store id, email, password
-const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "$2a$10$Wm.mVryfyDJsZJjH2rvZu.VAYdRmI1g8zBpg/9C8ztZvuuSmwjzQe",
-  },
-};
-
-
-//check an email in users object
-const isEmailUnique = (newEmail) => {
-  let result = true;
-  for (let user in users) {
-    let oldEmail = users[user].email;
-    if (oldEmail === newEmail) {
-      return false;
-    }
-  } 
-  return result;
-};
-
-//checking if user is logged in or registered via cookie
-const getUserFromCookie = (req) => users[req.session.user_id];
-
-//function to check if userID is equal to the id of the currently logged-in user
-const urlsForUser = (id) => {
-  let usersURL = {};
-  for (const key in urlDatabase) {
-    if (urlDatabase[key].userID === id) {
-      usersURL[key] = urlDatabase[key];
-    }
-  } return usersURL;
-}
 
 //Defining a rout handler for get request from / and responding with simple output
 app.get("/", (req, res) => {
@@ -82,7 +28,7 @@ app.get("/", (req, res) => {
 
 //Requesting data from /urls and rendering urls_index page and passing templateVars as a callback
 app.get("/urls", (req, res) => {
-    const pullTheUserURL = urlsForUser (req.session.user_id);
+    const pullTheUserURL = urlsForUser(req.session.user_id);
     const templateVars = { urls: pullTheUserURL, user: getUserFromCookie(req) };
     res.render("urls_index", templateVars);
 });
@@ -100,7 +46,6 @@ app.post("/urls", (req, res) => {
     return res.status(403).send("Access denied");
   };
 });
-
 
 //Requesting data from url/new and rendering urls_new page and passing templateVars as callback
 app.get("/urls/new", (req, res) => {
@@ -137,17 +82,23 @@ app.post("/register", (req, res) => {
 
 // Rendering information about a single URL
 app.get("/urls/:shortURL", (req, res) => {
+  if (!req.session.user_id) {
+    return res.status(400).send("You aren't Logged In");
+  }
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
     user: getUserFromCookie(req),
   };
+  if (urlDatabase[req.params.shortURL][req.session.user_id] !== urlDatabase[req.params.shortURL.userID]) {
+    res.status(400).send("Unauthorised Request");
+  } else {
   res.render("urls_show", templateVars);
+  }
 });
 
 //Redirect shortURL using /u rout to longURL
 app.get("/u/:shortURL", (req, res) => {
-  console.log(req.params.shortURL);
   if (urlDatabase[req.params.shortURL]) {
     const shortURL = req.params.shortURL;
     const longURL = urlDatabase[shortURL].longURL;
